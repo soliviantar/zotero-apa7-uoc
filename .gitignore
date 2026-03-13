@@ -1,0 +1,22 @@
+# Build artifacts (the .xpi goes in GitHub Releases, not in the repo)
+*.xpi
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp
+*.tmp
+
+# Internal project docs (not for GitHub)
+ESTADO_PROYECTO.md
+CLAUDE.md
