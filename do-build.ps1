@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
-$outputFile = "zotero-apa7-uoc-1.1.0.xpi"
-$zipFile = "zotero-apa7-uoc-1.1.0.zip"
+$outputFile = "zotero-apa7-uoc-1.2.0.xpi"
+$zipFile = "zotero-apa7-uoc-1.2.0.zip"
 
 if (Test-Path $outputFile) { Remove-Item $outputFile }
 if (Test-Path $zipFile) { Remove-Item $zipFile }
