@@ -16,6 +16,10 @@ La Biblioteca de la UOC requiere una variante de APA 7 que incluye:
   | Occitano | e |
   | English | & |
   | Deutsch | und |
+- **Sin coma de Oxford** antes de la conjunción final, siguiendo la norma de la RAE:
+  `García, A., López, B. y Martín, C.` (no `..., López, B., y Martín, C.`)
+  > **Nota:** En inglés, APA 7 utiliza la serial comma (*Oxford comma*) antes de "&". Este estilo la omite en todos los idiomas por coherencia con la adaptación UOC. Si necesitas la serial comma en inglés, usa el estilo APA 7 estándar de Zotero.
+- **Sin "Recuperado de" ni fecha de acceso**: la URL se muestra directamente, sin coletillas como "Recuperado 25 de febrero de 2026, de...", siguiendo las indicaciones específicas de la UOC en sus PEC
 - **Punto tras el último corchete** antes del año: `[Nombre]. (Año)`
 - **Soporte multiidioma**: la conjunción y otros términos se adaptan automáticamente al idioma configurado en Zotero
 
@@ -33,7 +37,7 @@ Redolar Ripoll, D. E. [Diego Emilia]. (2023). Neurociencia cognitiva. Editorial 
 
 **Varios autores:**
 ```
-Bados López, A. [Arturo], y García Grau, E. [Eugeni]. (2009). El Proceso de
+Bados López, A. [Arturo] y García Grau, E. [Eugeni]. (2009). El Proceso de
 evaluación y tratamiento. https://hdl.handle.net/2445/9893
 ```
 
@@ -125,6 +129,10 @@ The UOC Library requires a variant of APA 7 that includes the following modifica
   | Occitan | e |
   | English | & |
   | Deutsch | und |
+- **No Oxford comma** before the final conjunction, following RAE (Spanish Royal Academy) guidelines:
+  `García, A., López, B. y Martín, C.` (not `..., López, B., y Martín, C.`)
+  > **Note:** Standard APA 7 in English uses the serial comma (*Oxford comma*) before "&". This style omits it in all languages for consistency with the UOC adaptation. If you need the serial comma in English, use Zotero's standard APA 7 style instead.
+- **No "Retrieved from" or access date**: URLs are shown directly, without phrases like "Retrieved February 25, 2026, from...", following specific UOC guidelines
 - **A period after the closing bracket** before the year: `[FirstName]. (Year)`
 - **Multilanguage support**: conjunctions and other terms adapt automatically to Zotero's configured language
 
@@ -142,7 +150,7 @@ Redolar Ripoll, D. E. [Diego Emilia]. (2023). Neurociencia cognitiva. Editorial 
 
 **Multiple authors:**
 ```
-Bados López, A. [Arturo], y García Grau, E. [Eugeni]. (2009). El Proceso de
+Bados López, A. [Arturo] y García Grau, E. [Eugeni]. (2009). El Proceso de
 evaluación y tratamiento. https://hdl.handle.net/2445/9893
 ```
 

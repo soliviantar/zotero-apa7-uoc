@@ -384,7 +384,7 @@
   <macro name="author">
     <!-- Substitutes for missing authors: order prioritizes primary creators (e.g., composer, author) over secondary roles (e.g., editor, curator), with title as the final fallback. -->
     <names variable="composer">
-      <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+      <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
       <label form="short" prefix=" (" suffix=")" text-case="title"/>
       <substitute>
         <names variable="author"/>
@@ -394,24 +394,24 @@
           <if type="broadcast">
             <names variable="script-writer director">
               <!-- Actors/performers and producers [not executive] not cited in APA style. -->
-              <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+              <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
               <label prefix=" (" suffix=")" text-case="title"/>
             </names>
           </if>
         </choose>
         <names variable="director">
           <!-- For non-broadcast items, APA only cites directors and not writers. -->
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <names variable="guest host">
           <!-- TODO: Collapse variables when that becomes available. -->
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <names variable="producer">
           <!-- Producers not cited if there is a writer/director, but use if they are the principal creator. -->
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <choose>
@@ -427,11 +427,11 @@
           </else-if>
         </choose>
         <names variable="executive-producer">
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <names variable="series-creator">
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <names variable="editor-translator"/>
@@ -439,23 +439,23 @@
         <names variable="editor"/>
         <names variable="editorial-director"/>
         <names variable="compiler">
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <choose>
           <if match="any" type="event performance speech">
             <names variable="chair">
-              <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+              <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
               <label prefix=" (" suffix=")" text-case="title"/>
             </names>
             <names variable="organizer">
-              <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+              <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
               <label prefix=" (" suffix=")" text-case="title"/>
             </names>
           </if>
         </choose>
         <names variable="curator">
-          <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+          <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           <label prefix=" (" suffix=")" text-case="title"/>
         </names>
         <names variable="collection-editor"/>
@@ -481,7 +481,7 @@
         <else-if match="any" type="book musical_score pamphlet report standard">
           <names prefix="(" suffix=")" variable="contributor">
             <label form="verb" suffix=" "/>
-            <name and="text" delimiter-precedes-last="always" name-as-sort-order="all"/>
+            <name and="text" delimiter-precedes-last="never" name-as-sort-order="all"/>
           </names>
         </else-if>
       </choose>
@@ -1908,18 +1908,7 @@
         <text prefix="https://doi.org/" variable="DOI"/>
       </if>
       <else-if variable="URL">
-        <group delimiter=" ">
-          <choose>
-            <if match="none" variable="issued status">
-              <text term="retrieved" text-case="capitalize-first"/>
-              <group delimiter=", ">
-                <date form="text" variable="accessed"/>
-                <text term="from"/>
-              </group>
-            </if>
-          </choose>
-          <text variable="URL"/>
-        </group>
+        <text variable="URL"/>
       </else-if>
     </choose>
   </macro>
