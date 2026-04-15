@@ -191,7 +191,9 @@ var APA7UOC = {
           if (new RegExp(eln + ",\\s*" + ei + "\\s*\\[").test(result)) continue;
 
           // Reemplazar: "Apellido, I." → "Apellido, I. [Nombre]"
-          var re = new RegExp("(" + eln + ",\\s*" + ei + ")(?!\\s*\\[)", "g");
+          // El segundo lookahead evita matchear iniciales parciales:
+          // "A-Tjak, J." no matchea si le sigue " G." (más iniciales)
+          var re = new RegExp("(" + eln + ",\\s*" + ei + ")(?!\\s*\\[)(?!\\s[A-Z\\u00C0-\\u024F]\\.)", "g");
           result = result.replace(re, "$1 [" + fn + "]");
         }
       } catch (e) {
@@ -217,9 +219,20 @@ var APA7UOC = {
       var p = parts[i];
       if (!p) continue;
       if (p.indexOf("-") !== -1) {
+        // Nombres con guión: "Jean-Pierre" → "J.-P."
         inits.push(p.split("-").filter(Boolean).map(function (s) {
           return s.charAt(0).toUpperCase() + ".";
         }).join("-"));
+      } else if (/^[A-Z]\.[A-Z]/i.test(p)) {
+        // Iniciales compuestas: "G.L." o "G.L" → "G.", "L."
+        var letters = p.match(/[A-Za-z]/g);
+        if (letters && letters.length >= 2) {
+          for (var k = 0; k < letters.length; k++) {
+            inits.push(letters[k].toUpperCase() + ".");
+          }
+        } else {
+          inits.push(p.charAt(0).toUpperCase() + ".");
+        }
       } else {
         inits.push(p.charAt(0).toUpperCase() + ".");
       }

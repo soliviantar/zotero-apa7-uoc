@@ -81,7 +81,7 @@ powershell -ExecutionPolicy Bypass -File do-build.ps1
 bash build.sh
 ```
 
-Esto genera el archivo `zotero-apa7-uoc-1.2.0.xpi`.
+Esto genera el archivo `zotero-apa7-uoc-1.3.0.xpi`.
 
 ## Estructura del proyecto
 
@@ -195,7 +195,7 @@ powershell -ExecutionPolicy Bypass -File do-build.ps1
 bash build.sh
 ```
 
-This will generate the file zotero-apa7-uoc-1.2.0.xpi.
+This will generate the file zotero-apa7-uoc-1.3.0.xpi.
 
 ## Project structure
 

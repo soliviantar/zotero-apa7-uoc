@@ -449,21 +449,31 @@ var APA7UOC = {
       return firstName.trim();
     }
 
-    const parts = firstName.split(/[\s]+/);
-    const initials = parts.map((part) => {
-      if (!part) return "";
-      // Manejar nombres con guión: "Jean-Pierre" → "J.-P."
-      if (part.includes("-")) {
-        return part
-          .split("-")
-          .filter((s) => s.length > 0)
-          .map((sub) => sub.charAt(0).toUpperCase() + ".")
-          .join("-");
+    const parts = firstName.split(/\s+/);
+    const inits = [];
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      if (!p) continue;
+      if (p.includes("-")) {
+        // Nombres con guión: "Jean-Pierre" → "J.-P."
+        inits.push(p.split("-").filter(s => s.length > 0)
+          .map(s => s.charAt(0).toUpperCase() + ".").join("-"));
+      } else if (/^[A-Z]\.[A-Z]/i.test(p)) {
+        // Iniciales compuestas: "G.L." o "G.L" → "G.", "L."
+        const letters = p.match(/[A-Za-z]/g);
+        if (letters && letters.length >= 2) {
+          for (let k = 0; k < letters.length; k++) {
+            inits.push(letters[k].toUpperCase() + ".");
+          }
+        } else {
+          inits.push(p.charAt(0).toUpperCase() + ".");
+        }
+      } else {
+        inits.push(p.charAt(0).toUpperCase() + ".");
       }
-      return part.charAt(0).toUpperCase() + ".";
-    }).filter((s) => s.length > 0);
+    }
 
-    return initials.join(" ");
+    return inits.join(" ");
   },
 
   /**
