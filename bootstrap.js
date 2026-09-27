@@ -1,8 +1,20 @@
-/* bootstrap.js — Plugin APA 7.ª edición – Adaptación UOC  v5
+/* bootstrap.js — Plugin APA 7.ª edición – Adaptación UOC  v6 
  *
  * Inyecta [NombreCompleto] tras las iniciales en bibliografías APA UOC.
- * Parchea Zotero.Cite.makeFormattedBibliography, que es la función
- * usada por "Crear bibliografía a partir del elemento".
+ *
+ * Esta versión añade un SEGUNDO punto de intercepción respecto a la v5:
+ *
+ *   Patch 1 (original): Zotero.Cite.makeFormattedBibliography
+ *     → usado por "Crear bibliografía a partir del elemento" y Quick Copy.
+ *
+ *   Patch 2 (nuevo):     Zotero.Style.prototype.getCiteProc
+ *     → es la función que crea/entrega la instancia del motor citeproc-js
+ *       para un estilo. TODOS los consumidores de una bibliografía —incluida
+ *       la integración con Word/LibreOffice— obtienen su motor CSL pasando
+ *       por aquí. En cuanto se crea una instancia del motor para el estilo
+ *       UOC, le envolvemos su propio método makeBibliography(). Así, sea
+ *       quien sea quien pida la bibliografía después (Word incluido), la
+ *       inyección de [Nombre] se aplica igual.
  */
 
 var APA7UOC = {
@@ -10,6 +22,7 @@ var APA7UOC = {
   _rootURI: null,
   _patched: false,
   _originalMakeFormatted: null,
+  _originalGetCiteProc: null,
 
   init: function (rootURI) {
     this._rootURI = rootURI;
@@ -27,9 +40,9 @@ var APA7UOC = {
 
     Zotero.debug("APA7-UOC: === Aplicando patches ===");
 
-    // --- Patch: Zotero.Cite.makeFormattedBibliography ---
+    // --- Patch 1: Zotero.Cite.makeFormattedBibliography ---
     // Esta función genera el HTML/texto de la bibliografía.
-    // Es llamada por "Crear bibliografía a partir del elemento" y otros.
+    // Es llamada por "Crear bibliografía a partir del elemento" y Quick Copy.
     try {
       if (Zotero.Cite && typeof Zotero.Cite.makeFormattedBibliography === "function") {
         this._originalMakeFormatted = Zotero.Cite.makeFormattedBibliography;
@@ -46,19 +59,17 @@ var APA7UOC = {
 
           // Solo procesar strings (HTML o texto plano)
           if (typeof result !== "string") {
-            Zotero.debug("APA7-UOC: Resultado no es string, tipo=" + typeof result);
+            Zotero.debug("APA7-UOC: [makeFormattedBibliography] Resultado no es string, tipo=" + typeof result);
             return result;
           }
 
-          // Detectar si el estilo activo es UOC
           var isUOC = self._isUOCStyle(cslEngine);
-          Zotero.debug("APA7-UOC: isUOC=" + isUOC);
+          Zotero.debug("APA7-UOC: [makeFormattedBibliography] isUOC=" + isUOC);
 
           if (!isUOC) return result;
 
-          // Obtener items del registro del motor CSL
           var items = self._getRegisteredItems(cslEngine);
-          Zotero.debug("APA7-UOC: Procesando " + items.length + " items");
+          Zotero.debug("APA7-UOC: [makeFormattedBibliography] Procesando " + items.length + " items");
 
           if (items.length === 0) return result;
 
@@ -70,7 +81,34 @@ var APA7UOC = {
         Zotero.debug("APA7-UOC: ✗ Cite.makeFormattedBibliography NO disponible");
       }
     } catch (e) {
-      Zotero.debug("APA7-UOC: ERROR Patch: " + e);
+      Zotero.debug("APA7-UOC: ERROR Patch 1: " + e);
+      if (e.stack) Zotero.debug("APA7-UOC: Stack: " + e.stack);
+    }
+
+    // --- Patch 2: Zotero.Style.prototype.getCiteProc ---
+    // Punto de creación del motor citeproc-js para un estilo. Lo usan tanto
+    // "Crear bibliografía" como la integración con Word/LibreOffice.
+    try {
+      if (Zotero.Style && Zotero.Style.prototype && typeof Zotero.Style.prototype.getCiteProc === "function") {
+        this._originalGetCiteProc = Zotero.Style.prototype.getCiteProc;
+        var origGetCiteProc = this._originalGetCiteProc;
+
+        Zotero.Style.prototype.getCiteProc = function () {
+          var engine = origGetCiteProc.apply(this, arguments);
+          try {
+            self._wrapEngineMakeBibliography(engine);
+          } catch (e) {
+            Zotero.debug("APA7-UOC: Error envolviendo engine tras getCiteProc: " + e);
+          }
+          return engine;
+        };
+
+        Zotero.debug("APA7-UOC: ✓ Patch Style.prototype.getCiteProc OK");
+      } else {
+        Zotero.debug("APA7-UOC: ✗ Style.prototype.getCiteProc NO disponible (revisar nombre real de la función en esta versión de Zotero)");
+      }
+    } catch (e) {
+      Zotero.debug("APA7-UOC: ERROR Patch 2: " + e);
       if (e.stack) Zotero.debug("APA7-UOC: Stack: " + e.stack);
     }
 
@@ -81,6 +119,10 @@ var APA7UOC = {
     if (this._originalMakeFormatted) {
       Zotero.Cite.makeFormattedBibliography = this._originalMakeFormatted;
       this._originalMakeFormatted = null;
+    }
+    if (this._originalGetCiteProc) {
+      Zotero.Style.prototype.getCiteProc = this._originalGetCiteProc;
+      this._originalGetCiteProc = null;
     }
     this._patched = false;
     Zotero.debug("APA7-UOC: Patches eliminados");
@@ -116,15 +158,12 @@ var APA7UOC = {
   _isUOCStyle: function (cslEngine) {
     try {
       if (!cslEngine) return false;
-      // Buscar en opt.styleID
       if (cslEngine.opt && cslEngine.opt.styleID) {
         if (String(cslEngine.opt.styleID).indexOf("apa-uoc") !== -1) return true;
       }
-      // Buscar en sys.id (otra ubicación posible)
       if (cslEngine.sys && cslEngine.sys.id) {
         if (String(cslEngine.sys.id).indexOf("apa-uoc") !== -1) return true;
       }
-      // Buscar en todas las keys de opt
       if (cslEngine.opt) {
         var keys = Object.keys(cslEngine.opt);
         for (var i = 0; i < keys.length; i++) {
@@ -152,7 +191,74 @@ var APA7UOC = {
   },
 
   // =========================================================================
-  // INYECCIÓN DE [Nombre]
+  // ENVOLTURA DEL MOTOR CITEPROC (nuevo en v6)
+  // =========================================================================
+
+  // Envuelve engine.makeBibliography() para una instancia concreta del motor
+  // CSL. Se llama justo después de crear/obtener el motor vía getCiteProc().
+  // engine.makeBibliography() devuelve [bibmeta, entries], donde:
+  //   - bibmeta.entry_ids es un array (una entrada por referencia) de arrays
+  //     (uno o más IDs de item agrupados en esa entrada)
+  //   - entries es el array paralelo de strings ya formateados
+  _wrapEngineMakeBibliography: function (engine) {
+    if (!engine || engine.__apa7uocWrapped) return;
+    if (typeof engine.makeBibliography !== "function") {
+      Zotero.debug("APA7-UOC: engine.makeBibliography no es función, no se envuelve");
+      return;
+    }
+    var self = this;
+    var origMB = engine.makeBibliography;
+
+    engine.makeBibliography = function () {
+      var result = origMB.apply(this, arguments);
+
+      try {
+        var isUOC = self._isUOCStyle(this);
+        Zotero.debug("APA7-UOC: [engine.makeBibliography] isUOC=" + isUOC);
+        if (!isUOC) return result;
+        if (!result || !Array.isArray(result) || result.length < 2) return result;
+
+        var bibmeta = result[0];
+        var entries = result[1];
+        var idLists = bibmeta && bibmeta.entry_ids;
+        if (!idLists) {
+          Zotero.debug("APA7-UOC: [engine.makeBibliography] Sin entry_ids en bibmeta");
+          return result;
+        }
+
+        for (var i = 0; i < entries.length; i++) {
+          try {
+            var idList = idLists[i];
+            if (!idList || !idList.length) continue;
+
+            var relatedItems = [];
+            for (var k = 0; k < idList.length; k++) {
+              var it = null;
+              try { it = Zotero.Items.get(idList[k]); } catch (e2) {}
+              if (it) relatedItems.push(it);
+            }
+            if (relatedItems.length === 0) continue;
+
+            entries[i] = self._injectFullNames(entries[i], relatedItems);
+          } catch (eEntry) {
+            Zotero.debug("APA7-UOC: Error procesando entrada " + i + " de makeBibliography: " + eEntry);
+          }
+        }
+
+        Zotero.debug("APA7-UOC: [engine.makeBibliography] " + entries.length + " entradas procesadas");
+        return [bibmeta, entries];
+      } catch (eOuter) {
+        Zotero.debug("APA7-UOC: Error en engine.makeBibliography envuelto: " + eOuter);
+        return result;
+      }
+    };
+
+    engine.__apa7uocWrapped = true;
+    Zotero.debug("APA7-UOC: ✓ Engine.makeBibliography envuelto para esta instancia");
+  },
+
+  // =========================================================================
+  // INYECCIÓN DE [Nombre]  (sin cambios respecto a v5)
   // =========================================================================
 
   _injectFullNames: function (bibOutput, items) {
@@ -170,29 +276,21 @@ var APA7UOC = {
 
         for (var j = 0; j < creators.length; j++) {
           var c = creators[j];
-          // Saltar nombres institucionales o sin nombre de pila
           if (c.fieldMode === 1 || !c.firstName) continue;
 
           var fn = c.firstName.trim();
           var ln = c.lastName.trim();
           if (!fn || !ln) continue;
 
-          // Saltar si el nombre es solo iniciales (no aporta info nueva)
-          // "A." o "P. A." → saltar; "P. Antonio" o "María J." → añadir
           if (this._isOnlyInitials(fn)) continue;
 
           var initials = this._getInitials(fn);
 
-          // Escapar para regex
           var eln = this._esc(ln);
           var ei = this._esc(initials);
 
-          // Saltar si ya tiene [Nombre]
           if (new RegExp(eln + ",\\s*" + ei + "\\s*\\[").test(result)) continue;
 
-          // Reemplazar: "Apellido, I." → "Apellido, I. [Nombre]"
-          // El segundo lookahead evita matchear iniciales parciales:
-          // "A-Tjak, J." no matchea si le sigue " G." (más iniciales)
           var re = new RegExp("(" + eln + ",\\s*" + ei + ")(?!\\s*\\[)(?!\\s[A-Z\\u00C0-\\u024F]\\.)", "g");
           result = result.replace(re, "$1 [" + fn + "]");
         }
@@ -201,7 +299,6 @@ var APA7UOC = {
       }
     }
 
-    // Añadir punto después del último corchete antes del año: "] (2009)" → "]. (2009)"
     result = result.replace(/\](\s+)\((\d{4})/g, "].$1($2");
 
     return result;
@@ -209,7 +306,6 @@ var APA7UOC = {
 
   _getInitials: function (firstName) {
     if (!firstName) return "";
-    // Si ya son iniciales (e.g., "J. M."), devolver tal cual
     if (/^[A-Z\u00C0-\u024F]\.(\s*-?\s*[A-Z\u00C0-\u024F]\.)*\s*$/i.test(firstName)) {
       return firstName.trim();
     }
@@ -219,12 +315,10 @@ var APA7UOC = {
       var p = parts[i];
       if (!p) continue;
       if (p.indexOf("-") !== -1) {
-        // Nombres con guión: "Jean-Pierre" → "J.-P."
         inits.push(p.split("-").filter(Boolean).map(function (s) {
           return s.charAt(0).toUpperCase() + ".";
         }).join("-"));
       } else if (/^[A-Z]\.[A-Z]/i.test(p)) {
-        // Iniciales compuestas: "G.L." o "G.L" → "G.", "L."
         var letters = p.match(/[A-Za-z]/g);
         if (letters && letters.length >= 2) {
           for (var k = 0; k < letters.length; k++) {
@@ -241,22 +335,17 @@ var APA7UOC = {
   },
 
   _isOnlyInitials: function (firstName) {
-    // Devuelve true si TODOS los componentes del nombre son iniciales
-    // "A." → true, "P. A." → true, "J.-P." → true
-    // "Antonio" → false, "P. Antonio" → false, "María J." → false
     if (!firstName) return true;
     var parts = firstName.trim().split(/\s+/);
     for (var i = 0; i < parts.length; i++) {
       var p = parts[i];
       if (!p) continue;
-      // Manejar iniciales compuestas con guión: "J.-P."
       var subparts = p.split("-");
       for (var j = 0; j < subparts.length; j++) {
         var sp = subparts[j];
         if (!sp) continue;
-        // Una inicial es una sola letra, opcionalmente seguida de punto
         if (!/^[A-Z\u00C0-\u024F]\.?$/i.test(sp)) {
-          return false; // Este componente NO es una inicial → tiene nombre real
+          return false;
         }
       }
     }
